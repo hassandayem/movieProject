@@ -8,15 +8,17 @@ const CONTAINER = document.querySelector(".container");
 // Don't touch this function please
 const autorun = async () => {
   const movies = await fetchMovies();
+  const genres = await fetchGenres();
+  renderGenres(genres.genres, movies.results);
   renderMovies(movies.results);
 };
 
 // Don't touch this function please
- const constructUrl = (path) => {
+const constructUrl = (path) => {
   return `${TMDB_BASE_URL}/${path}?api_key=${atob(
     "NTQyMDAzOTE4NzY5ZGY1MDA4M2ExM2M0MTViYmM2MDI="
   )}`;
-}; 
+};
 
 // Selectors
 const searchField = document.getElementById("start-search");
@@ -46,14 +48,14 @@ const fetchSearchResults = async (word) => {
   console.log(url)
   const res = await fetch(url);
 
-  
+
   console.log(res.json());
-  
+
 };
 
 //Click on serach button function
 function startSearch() {
-console.log(fetchSearchResults());
+  console.log(fetchSearchResults());
 
 
 }
@@ -96,31 +98,64 @@ const fetchTrailer = async (movieId) => {
   return res.json();
 };
 
+const fetchGenres = async () => {
+  const url = constructUrl(`genre/movie/list`);
+  const res = await fetch(url);
+  return res.json();
+};
+
+const fetchLatest = async () => {
+  const url = constructUrl(`movie/latest`);
+  const res = await fetch(url);
+  return res.json();
+};
+
+
+const fetchPopulars = async () => {
+  const url = constructUrl(`movie/popular`);
+  const res = await fetch(url);
+  return res.json();
+};
+
+const fetchTopRateds = async () => {
+  const url = constructUrl(`movie/top_rated`);
+  const res = await fetch(url);
+  return res.json();
+};
+
+const fetchUpcomings = async () => {
+  const url = constructUrl(`movie/upcoming`);
+  const res = await fetch(url);
+  return res.json();
+};
+
 // You'll need to play with this function in order to add features and enhance the style.
 const renderMovies = (movies) => {
+  getMoviesBy();
   const movieRow = document.createElement("div")
-    movieRow.className = "row";
+  movieRow.className = "row";
 
-    movies.map((movie) => {
-    
+  movies.map((movie) => {
+
     const movieDiv = document.createElement("div");
     movieDiv.classList = "col-md-4"
     movieDiv.innerHTML = `
         <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
       movie.title
-    } poster" class = "main-poster-img" width = 100%>
+      } poster" class = "main-poster-img" width = 100%>
         <h3>${movie.title}</h3>`;
     movieDiv.addEventListener("click", () => {
       movieDetails(movie);
     });
- 
 
-    
+
+
+
     movieRow.appendChild(movieDiv)
     CONTAINER.appendChild(movieRow)
-    
+
   });
-  
+
 };
 
 // You'll need to play with this function in order to add features and enhance the style.
@@ -129,14 +164,14 @@ const renderMovie = (movie) => {
     <div class="row">
         <div class="col-md-4">
              <img id="movie-backdrop" src=${
-               BACKDROP_BASE_URL + movie.backdrop_path
-             }>
+    BACKDROP_BASE_URL + movie.backdrop_path
+    }>
         </div>
         <div class="col-md-8">
             <h2 id="movie-title">${movie.title}</h2>
             <p id="movie-release-date"><b>Release Date:</b> ${
-              movie.release_date
-            }</p>
+    movie.release_date
+    }</p>
             <p id="movie-runtime"><b>Runtime:</b> ${movie.runtime} Minutes</p>
             <h3>Overview:</h3>
             <p id="movie-overview">${movie.overview}</p>
@@ -168,8 +203,8 @@ const renderMovie = (movie) => {
             <div id = "realted-movies"></div>
             
     </div>`;
-    
-            
+
+
 };
 
 const renderCast = (movie) => {
@@ -185,18 +220,18 @@ const renderCast = (movie) => {
     actorLi.appendChild(actorName);
     actors.appendChild(actorLi);
   }
-    
+
 
   for (let i = 0; i < movie.crew.length; i++) {
     if (movie.crew[i]["job"] === "Director") {
-    //console.log(movie.crew[i]["name"])
-    const direName = movie.crew[i]["name"];
-    console.log(direName)
-    //console.log("textNode", directorName)
-  
-  const directorHeading = document.getElementById("director")
-  const directorName = document.createTextNode(direName);
-  directorHeading.appendChild(directorName)
+      //console.log(movie.crew[i]["name"])
+      const direName = movie.crew[i]["name"];
+      console.log(direName)
+      //console.log("textNode", directorName)
+
+      const directorHeading = document.getElementById("director")
+      const directorName = document.createTextNode(direName);
+      directorHeading.appendChild(directorName)
     }
   }
 }
@@ -211,7 +246,63 @@ const renderTrailer = (movie) => {
   console.log(trailerFrame)
 
   videoContainer.innerHTML = trailerFrame;
-  
+
 }
+
+const renderGenres = (genres, movies) => {
+  renderMenuList(genres, movies);
+}
+
+const renderMenuList = (genres, movies) => {
+  const dropdownMenu = document.querySelector('#genre-menu');
+  genres.forEach(genre => {
+    const aTag = document.createElement('a');
+    aTag.addEventListener('click', function (e) {
+      renderMoviesByGenre(parseInt(e.target.id), movies);
+    })
+    aTag.classList.add('dropdown-item');
+    aTag.setAttribute('href', '#');
+    aTag.setAttribute('id', genre.id);
+    aTag.innerHTML = genre.name;
+    dropdownMenu.appendChild(aTag);
+  });
+};
+
+const renderMoviesByGenre = (genreId, movies) => {
+  clearMovies();
+  const filteredMovies = movies.filter(movie => {
+    return movie.genre_ids.includes(genreId);
+  });
+  filteredMovies.map((movie) => {
+    const movieDiv = document.createElement("div");
+    movieDiv.innerHTML = `
+        <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
+      movie.title
+      } poster">
+        <h3>${movie.title}</h3>`;
+    movieDiv.addEventListener("click", () => {
+      movieDetails(movie);
+    });
+    CONTAINER.appendChild(movieDiv);
+  });
+};
+
+const getMoviesBy = () => {
+  const sortByList = document.querySelectorAll('#sort-list a');
+  sortByList.forEach(item => {
+    item.addEventListener('click', async function (event) {
+      const sorting = event.target.id;
+      let popular;
+      if (event.target.id === 'popular') {
+        const movies = await fetchPopulars();
+
+      }
+    });
+  });
+}
+
+const clearMovies = () => {
+  CONTAINER.innerHTML = '';
+};
 
 document.addEventListener("DOMContentLoaded", autorun);
