@@ -108,7 +108,7 @@ const renderMovies = (movies) => {
     movieDiv.innerHTML = `
         <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
       movie.title
-    } poster" width = 100%>
+    } poster" class = "main-poster-img" width = 100%>
         <h3>${movie.title}</h3>`;
     movieDiv.addEventListener("click", () => {
       movieDetails(movie);
