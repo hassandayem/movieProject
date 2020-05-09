@@ -9,3 +9,11 @@
 #actors {
     margin: 24px 16px 0 0;
 }
+
+.actors-list {
+    display: inline;
+    font-size: 1.3em;
+    margin-right: 1rem;
+    color: blue;
+    cursor: pointer;
+}
