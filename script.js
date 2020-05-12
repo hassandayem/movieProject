@@ -9,8 +9,8 @@ const CONTAINER = document.querySelector(".container");
 const autorun = async () => {
   const movies = await fetchMovies();
   const genres = await fetchGenres();
-  renderGenres(genres.genres, movies.results);
   renderMovies(movies.results);
+  renderGenres(genres.genres, movies.results);
 };
 
 // Don't touch this function please
@@ -20,56 +20,37 @@ const constructUrl = (path) => {
   )}`;
 };
 
-// Selectors
-const searchField = document.getElementById("start-search");
-
-
-//NavBar Search field
-
-/*
-1. save the user's input in memory .. Done
-2. on click on submit button => fetch some data
-3. if the data is valid append to continer
-   else threw a message ("no results")
-*/
-
-
-//Prevent dafualt behaviour for form
-function stopSending(event) {
-  event.preventDefault();
-  return false;
-}
-//Handle the click event to make it do the search
-//-- Fetch the results --//
-const fetchSearchResults = async (word) => {
-  word = searchField.value;
-  console.log(word)
-  const url = `${TMDB_BASE_URL}/search/keyword?api_key=08f3de04f92d1c690b85e53c492a9fc1&query=${word}&page=1`;
-  console.log(url)
-  const res = await fetch(url);
-
-
-  console.log(res.json());
-
-};
-
-//Click on serach button function
-function startSearch() {
-  console.log(fetchSearchResults());
-
-
-}
-
-
 
 // You may need to add to this function, definitely don't delete it.
 const movieDetails = async (movie) => {
   const movieRes = await fetchMovie(movie.id);
   const movieCast = await fetchCast(movie.id);
   const movieTrailer = await fetchTrailer(movie.id);
+  const relatedMovie = await fetchSimilar(movie.id);
+  
   renderMovie(movieRes);
   renderCast(movieCast);
   renderTrailer(movieTrailer);
+  renderSimilar(relatedMovie);
+  
+  
+};
+
+//NavBar Search field
+
+//Prevent dafualt behaviour for form
+function stopSending(event) {
+  event.preventDefault();
+  return false;
+}
+
+//-- Fetch the results --//
+const fetchSearchMovie = async (word) => {
+  const url = constructUrl(`search/movie`);
+  const searchUrl = `${url}&query=${word}`
+  console.log(searchUrl)
+  const res = await fetch(searchUrl);
+  return res.json();
 };
 
 // This function is to fetch movies. You may need to add it or change some part in it in order to apply some of the features.
@@ -98,6 +79,13 @@ const fetchTrailer = async (movieId) => {
   return res.json();
 };
 
+const fetchSimilar = async (movieId) => {
+  const url = constructUrl(`movie/${movieId}/similar`);
+  const res = await fetch(url);
+  return res.json();
+}
+
+//Burak
 const fetchGenres = async () => {
   const url = constructUrl(`genre/movie/list`);
   const res = await fetch(url);
@@ -131,6 +119,7 @@ const fetchUpcomings = async () => {
 
 // You'll need to play with this function in order to add features and enhance the style.
 const renderMovies = (movies) => {
+  console.log('Movies', movies);
   getMoviesBy();
   const movieRow = document.createElement("div")
   movieRow.className = "row";
@@ -148,15 +137,42 @@ const renderMovies = (movies) => {
       movieDetails(movie);
     });
 
-
-
-
     movieRow.appendChild(movieDiv)
     CONTAINER.appendChild(movieRow)
 
   });
 
 };
+
+const renderSearchMovies = async () => {
+  const searchField = document.getElementById("start-search");
+  const word = searchField.value;
+  console.log(word)
+  const data = await fetchSearchMovie(word);
+  clearMovies();
+  renderMovies(data.results);
+  //console.log(searchMovie.results)
+  /* const movieRow = document.createElement("div")
+  movieRow.className = "row";
+
+  searchMovie.map((movie) => {
+
+    const movieDiv = document.createElement("div");
+    movieDiv.classList = "col-md-4"
+    movieDiv.innerHTML = `
+        <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
+      movie.title
+      } poster" class = "main-poster-img" width = 100%>
+        <h3>${movie.title}</h3>`;
+    movieDiv.addEventListener("click", () => {
+      movieDetails(movie);
+    });
+
+    movieRow.appendChild(movieDiv)
+    CONTAINER.appendChild(movieRow)
+
+  }); */
+}
 
 // You'll need to play with this function in order to add features and enhance the style.
 const renderMovie = (movie) => {
@@ -200,7 +216,7 @@ const renderMovie = (movie) => {
             <h3 id = "trailer">Trailer: </h3>
             <div id = "video-container"></div>
             <h3>Related Movies:</h3>
-            <div id = "realted-movies"></div>
+            <ul id="related" class="list-unstyled"></ul>
             
     </div>`;
 
@@ -211,12 +227,9 @@ const renderCast = (movie) => {
   console.log(movie.cast[20]);
   const actors = document.getElementById("actors");
   for (let i = 0; i < 5; i++) {
-    console.log(movie.cast[i]["name"])
-    console.log(movie.crew[i]["job"])
-
     const actorLi = document.createElement("li")
     const actorName = document.createTextNode(movie.cast[i]["name"])
-    actorLi.className = "actors-list"
+    actorLi.className = "inline-list"
     actorLi.appendChild(actorName);
     actors.appendChild(actorLi);
   }
@@ -226,7 +239,7 @@ const renderCast = (movie) => {
     if (movie.crew[i]["job"] === "Director") {
       //console.log(movie.crew[i]["name"])
       const direName = movie.crew[i]["name"];
-      console.log(direName)
+      //console.log(direName)
       //console.log("textNode", directorName)
 
       const directorHeading = document.getElementById("director")
@@ -237,18 +250,42 @@ const renderCast = (movie) => {
 }
 
 const renderTrailer = (movie) => {
-  console.log(movie.results[0]["key"])
+  //console.log(movie.results[0]["key"])
   const urlId = movie.results[0]["key"]
   const urlFirstSection = "https://www.youtube-nocookie.com/embed/"
   const videoContainer = document.querySelector("#video-container");
   const trailerFrame = `<iframe width="560" height="315" src= "${urlFirstSection + urlId}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
 
-  console.log(trailerFrame)
+  //console.log(trailerFrame)
 
   videoContainer.innerHTML = trailerFrame;
 
 }
 
+
+const renderSimilar = (movie) => {
+  const relatedContainer = document.querySelector("#related");
+  console.log(movie.results[0])
+  for (let i = 0; i < 5; i++) {
+    const similarLi = document.createElement("li")
+    similarLi.className = "inline-list"
+    const similarTitle = document.createTextNode(movie.results[i]["title"])
+    const similarPosterImg = document.createElement("img")
+    similarPosterImg.setAttribute("src", `${BACKDROP_BASE_URL + movie.results[i]["poster_path"]}`)
+    similarPosterImg.setAttribute("class", "related-poster")
+    similarLi.appendChild(similarPosterImg)
+    similarLi.appendChild(similarTitle)
+    
+    relatedContainer.appendChild(similarLi);
+    
+    similarLi.addEventListener("click", () => {
+      movieDetails(movie); 
+  }
+    )}
+}
+
+
+//Burak
 const renderGenres = (genres, movies) => {
   renderMenuList(genres, movies);
 }
@@ -301,8 +338,21 @@ const getMoviesBy = () => {
   });
 }
 
+
+
+///Working on Realted Movies.
+
+//1. Work on fetching data.
+//2. Work on displaying data on Container class.
+
+
+
+
+
 const clearMovies = () => {
   CONTAINER.innerHTML = '';
 };
 
 document.addEventListener("DOMContentLoaded", autorun);
+
+
