@@ -6,11 +6,13 @@ const BACKDROP_BASE_URL = "http://image.tmdb.org/t/p/w780";
 const CONTAINER = document.querySelector(".container");
 
 // Don't touch this function please
-const autorun = async () => {
-  const movies = await fetchMovies();
+const autorun = async (event, param = 'now_playing') => {
+  const movies = await fetchMovies(param);
   const genres = await fetchGenres();
-  renderMovies(movies.results);
+  console.log(movies);
+  console.log(param);
   renderGenres(genres.genres, movies.results);
+  renderMovies(movies);
 };
 
 // Don't touch this function please
@@ -27,13 +29,13 @@ const movieDetails = async (movie) => {
   const movieCast = await fetchCast(movie.id);
   const movieTrailer = await fetchTrailer(movie.id);
   const relatedMovie = await fetchSimilar(movie.id);
-  
+
   renderMovie(movieRes);
   renderCast(movieCast);
   renderTrailer(movieTrailer);
   renderSimilar(relatedMovie);
-  
-  
+
+
 };
 
 //NavBar Search field
@@ -54,8 +56,8 @@ const fetchSearchMovie = async (word) => {
 };
 
 // This function is to fetch movies. You may need to add it or change some part in it in order to apply some of the features.
-const fetchMovies = async () => {
-  const url = constructUrl(`movie/now_playing`);
+const fetchMovies = async (property) => {
+  const url = constructUrl(`movie/${property}`);
   const res = await fetch(url);
   return res.json();
 };
@@ -92,56 +94,44 @@ const fetchGenres = async () => {
   return res.json();
 };
 
-const fetchLatest = async () => {
-  const url = constructUrl(`movie/latest`);
-  const res = await fetch(url);
-  return res.json();
-};
-
-
-const fetchPopulars = async () => {
-  const url = constructUrl(`movie/popular`);
-  const res = await fetch(url);
-  return res.json();
-};
-
-const fetchTopRateds = async () => {
-  const url = constructUrl(`movie/top_rated`);
-  const res = await fetch(url);
-  return res.json();
-};
-
-const fetchUpcomings = async () => {
-  const url = constructUrl(`movie/upcoming`);
-  const res = await fetch(url);
-  return res.json();
-};
-
 // You'll need to play with this function in order to add features and enhance the style.
 const renderMovies = (movies) => {
-  console.log('Movies', movies);
+  console.log(movies);
+  addSortByDropdown();
   getMoviesBy();
   const movieRow = document.createElement("div")
-  movieRow.className = "row";
+  movieRow.className = "row mt-4";
 
-  movies.map((movie) => {
+  if (Array.isArray(movies.results)) {
+    movies.results.map((movie) => {
 
+      const movieDiv = document.createElement("div");
+      movieDiv.classList = "col-md-4"
+      movieDiv.innerHTML = `
+          <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
+        movie.title
+        } poster" class = "main-poster-img" width = 100%>
+          <h3>${movie.title}</h3>`;
+      movieDiv.addEventListener("click", () => {
+        movieDetails(movie);
+      });
+      movieRow.appendChild(movieDiv)
+      CONTAINER.appendChild(movieRow)
+    });
+  } else {
     const movieDiv = document.createElement("div");
     movieDiv.classList = "col-md-4"
     movieDiv.innerHTML = `
-        <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
-      movie.title
+          <img src="${BACKDROP_BASE_URL + movies.backdrop_path}" alt="${
+      movies.title
       } poster" class = "main-poster-img" width = 100%>
-        <h3>${movie.title}</h3>`;
+          <h3>${movies.title}</h3>`;
     movieDiv.addEventListener("click", () => {
-      movieDetails(movie);
+      movieDetails(movies);
     });
-
     movieRow.appendChild(movieDiv)
     CONTAINER.appendChild(movieRow)
-
-  });
-
+  }
 };
 
 const renderSearchMovies = async () => {
@@ -151,27 +141,6 @@ const renderSearchMovies = async () => {
   const data = await fetchSearchMovie(word);
   clearMovies();
   renderMovies(data.results);
-  //console.log(searchMovie.results)
-  /* const movieRow = document.createElement("div")
-  movieRow.className = "row";
-
-  searchMovie.map((movie) => {
-
-    const movieDiv = document.createElement("div");
-    movieDiv.classList = "col-md-4"
-    movieDiv.innerHTML = `
-        <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
-      movie.title
-      } poster" class = "main-poster-img" width = 100%>
-        <h3>${movie.title}</h3>`;
-    movieDiv.addEventListener("click", () => {
-      movieDetails(movie);
-    });
-
-    movieRow.appendChild(movieDiv)
-    CONTAINER.appendChild(movieRow)
-
-  }); */
 }
 
 // You'll need to play with this function in order to add features and enhance the style.
@@ -275,13 +244,14 @@ const renderSimilar = (movie) => {
     similarPosterImg.setAttribute("class", "related-poster")
     similarLi.appendChild(similarPosterImg)
     similarLi.appendChild(similarTitle)
-    
+
     relatedContainer.appendChild(similarLi);
-    
+
     similarLi.addEventListener("click", () => {
-      movieDetails(movie); 
+      movieDetails(movie);
+    }
+    )
   }
-    )}
 }
 
 
@@ -312,6 +282,7 @@ const renderMoviesByGenre = (genreId, movies) => {
   });
   filteredMovies.map((movie) => {
     const movieDiv = document.createElement("div");
+    movieDiv.classList.add('mt-4')
     movieDiv.innerHTML = `
         <img src="${BACKDROP_BASE_URL + movie.backdrop_path}" alt="${
       movie.title
@@ -327,17 +298,28 @@ const renderMoviesByGenre = (genreId, movies) => {
 const getMoviesBy = () => {
   const sortByList = document.querySelectorAll('#sort-list a');
   sortByList.forEach(item => {
-    item.addEventListener('click', async function (event) {
-      const sorting = event.target.id;
-      let popular;
-      if (event.target.id === 'popular') {
-        const movies = await fetchPopulars();
-
-      }
+    item.addEventListener('click', function (event) {
+      autorun(event, event.target.id);
     });
   });
 }
 
+const addSortByDropdown = () => {
+  CONTAINER.innerHTML = `
+  <div class="dropdown">
+    <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      Sort By
+    </button>
+    <div id="sort-list" class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+      <a id="now_playing" class="dropdown-item" href="#">Now Playing</a>
+      <a id="latest" class="dropdown-item" href="#">Latest</a>
+      <a id="popular" class="dropdown-item" href="#">Popular</a>
+      <a id="top_rated" class="dropdown-item" href="#">Top Rated</a>
+      <a id="upcoming" class="dropdown-item" href="#">Upcoming</a>
+    </div>
+  </div>
+`;
+};
 
 
 ///Working on Realted Movies.
