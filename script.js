@@ -9,8 +9,6 @@ const CONTAINER = document.querySelector(".container");
 const autorun = async (event, param = 'now_playing') => {
   const movies = await fetchMovies(param);
   const genres = await fetchGenres();
-  console.log(movies);
-  console.log(param);
   renderGenres(genres.genres, movies.results);
   renderMovies(movies);
 };
@@ -93,6 +91,18 @@ const fetchGenres = async () => {
   const res = await fetch(url);
   return res.json();
 };
+
+const fetchActors = async () => {
+  const url = constructUrl(`person/popular`);
+  const res = await fetch(url);
+  return res.json();
+};
+
+const fetchActor = async (actorId) => {
+  const url = constructUrl(`person/${actorId}`);
+  const res = await fetch(url);
+  return res.json();
+}
 
 // You'll need to play with this function in order to add features and enhance the style.
 const renderMovies = (movies) => {
@@ -321,15 +331,94 @@ const addSortByDropdown = () => {
 `;
 };
 
+const actorDetail = async (actor) => {
+  const actorMovies = actor.known_for;
+  const actorResponse = await fetchActor(actor.id);
+  renderActor(actorResponse, actorMovies);
+}
 
-///Working on Realted Movies.
+const renderActors = async () => {
+  clearMovies();
+  const actors = await fetchActors();
+  const actorRow = document.createElement("div");
+  actorRow.classList.add('row');
+  console.log(actors.results)
+  actors.results.map(actor => {
+    const actorDiv = document.createElement("div");
+    actorDiv.classList.add('col-4')
+    actorDiv.classList.add('mt-3')
+    actorDiv.innerHTML = `
+        <img style="width: 100%;" src="${PROFILE_BASE_URL + actor.profile_path}" alt="${
+      actor.name
+      } poster">
+        <h3>${actor.name}</h3>`;
+    actorDiv.addEventListener("click", () => {
+      actorDetail(actor);
+    });
+    actorRow.appendChild(actorDiv);
+  });
+  CONTAINER.appendChild(actorRow);
+};
 
-//1. Work on fetching data.
-//2. Work on displaying data on Container class.
+const renderActor = (actor, actorMovies) => {
+  console.log(actor);
+  console.log(actorMovies);
+  let gender;
+  if (actor.gender === 1) gender = 'Female';
+  if (actor.gender === 2) gender = 'Male';
 
-
-
-
+  CONTAINER.innerHTML = `
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4">
+          <img src=${BACKDROP_BASE_URL + actor.profile_path} class="card-img" alt="..."/>
+        </div>
+        <div class="col-md-8">
+          <div class="row">
+            <div class="col-12">
+              <h5 class="card-title">Name: ${actor.name}</h5>
+            </div>
+            <div class="col-4">
+              <p>Gender: ${gender}</p>
+            </div>
+            <div class="col-4">
+              <p>Birthday: ${actor.birthday}</p>
+            </div>
+            <div class="col-4">
+              <p>Deathday: ${actor.deathday ? actor.deathday : '-'}</p>
+            </div>
+            <div class="col-12">
+              <p>${actor.biography}</p>
+            </div>
+            <div class="col-12">
+            <h3 class="mb-3">${actor.name}'s movies</h3>
+              ${actorMovies.map(movie => {
+    return ` <div class="card mb-3">
+              <div class="row no-gutters">
+                <div class="col-md-4">
+                  <img src=${BACKDROP_BASE_URL + movie.backdrop_path} class="card-img" alt="..."/>
+                </div>
+                <div class="col-md-8">
+                  <div class="card-body">
+                    <h5 class="card-title">Name: ${movie.title ? movie.title : movie.name}</h5>
+                    <div class="row">
+                    <div class="col-6">
+                  <p class="card-text"><small class="text-muted">Vote Average: ${movie.vote_average}</small></p>
+                    </div>
+                    <div class="col-6">
+                    <p class="card-text"><small class="text-muted">Vote Count: ${movie.vote_count}</small></p>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>` }).join('')}
+          </div>
+        </div>  
+        </div>
+      </div>
+    </div>`;
+}
 
 const clearMovies = () => {
   CONTAINER.innerHTML = '';
